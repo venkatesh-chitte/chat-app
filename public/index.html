@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chatroom</title>
+  <style>
+    .green { color: green; }
+    .red { color: red; }
+  </style>
+</head>
+<body>
+  <ul id="user-list"></ul>
+  <ul id="chat-list"></ul>
+  <input type="text" id="message-input" placeholder="Type your message...">
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    const ws = new WebSocket('ws://localhost:3000');
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'userList') {
+        updateUserList(data.userList, data.onlineUsers);
+      } else if (data.type === 'chat') {
+        displayChatMessage(data.sender, data.text);
+      } else if (data.type === 'error') {
+        alert(data.message);
+      }
+    };
+
+    function updateUserList(userList, onlineUsers) {
+      const userListElement = document.getElementById('user-list');
+      userListElement.innerHTML = '';
+
+      userList.forEach((username) => {
+        const listItem = document.createElement('li');
+        const userStatus = onlineUsers.find((user) => user.username === username);
+
+        listItem.textContent = username;
+        listItem.className = userStatus ? userStatus.username : '';
+
+        userListElement.appendChild(listItem);
+      });
+    }
+
+    function displayChatMessage(sender, text) {
+      const chatListElement = document.getElementById('chat-list');
+      const listItem = document.createElement('li');
+      listItem.textContent = `${sender}: ${text}`;
+      chatListElement.appendChild(listItem);
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById('message-input');
+      const message = messageInput.value.trim();
+
+      if (message !== '') {
+        ws.send(JSON.stringify({ type: 'chat', text: message }));
+        messageInput.value = '';
+      }
+    }
+  </script>
+</body>
+</html>
